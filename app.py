@@ -7,35 +7,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 st.set_page_config(page_title="Song Recommender", page_icon="🎵", layout="wide")
 
-st.markdown("""
-    <style>
-    .song-card {
-        padding: 12px;
-        border-radius: 10px;
-        background-color: #1e1e1e;
-        margin-bottom: 10px;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 
 @st.cache_data
 def load_and_process():
-    df = pd.read_csv('dataset.csv')
-
-    cols_to_keep = ['track_name', 'artists', 'album_name', 'track_genre',
-                     'danceability', 'energy', 'loudness', 'speechiness',
-                     'acousticness', 'instrumentalness', 'valence',
-                     'tempo', 'liveness', 'popularity']
-    df = df[cols_to_keep]
-    df = df.dropna()
-    df = df.drop_duplicates()
-    df = df.drop_duplicates(subset=['track_name', 'artists'])
-
-    # Balanced sample - 100 songs per genre (keeps similarity matrix small enough for free hosting)
-    songs = df.groupby('track_genre').apply(
-        lambda x: x.sample(min(len(x), 100), random_state=42), include_groups=False
-    ).reset_index(level='track_genre').reset_index(drop=True)
+    # Pre-filtered, balanced dataset (already cleaned + sampled 100 songs/genre)
+    songs = pd.read_csv('dataset_small.csv')
 
     feature_cols = ['danceability', 'energy', 'loudness', 'speechiness',
                      'acousticness', 'instrumentalness', 'valence',
@@ -79,7 +55,6 @@ def get_album_art(track_name, artist_name):
         response = requests.get(url, params=params, timeout=5)
         data = response.json()
         if data.get("resultCount", 0) > 0:
-            # artworkUrl100 -> bump resolution up
             art_url = data["results"][0]["artworkUrl100"].replace("100x100", "300x300")
             return art_url
     except Exception:
